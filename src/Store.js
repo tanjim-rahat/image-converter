@@ -2,14 +2,14 @@ import { createStore } from "solid-js/store";
 
 const [store, setStore] = createStore({
   images: [
-    {
-      name: "test1",
-      type: "jpg",
-      size: 10000,
-      converted: false,
-      downloaded: false,
-      url: null,
-    },
+    // {
+    //   name: "test1",
+    //   type: "jpg",
+    //   size: 10000,
+    //   converted: false,
+    //   downloaded: false,
+    //   url: null,
+    // },
   ],
   formats: ["png", "jpeg", "webp"],
   convertFormat: null,
