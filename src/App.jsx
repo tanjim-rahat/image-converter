@@ -1,39 +1,22 @@
-import { For, Show, createSignal } from "solid-js";
-import { createStore } from "solid-js/store";
-import { dataURLToBlob } from "./functions";
+import { For, Show } from "solid-js";
+import { store, setStore, addImages } from "./Store";
+import { convertImage } from "./functions";
 import Button from "./components/Button";
-
-const [store, setStore] = createStore({
-  images: [
-    // {
-    //   name: "test1",
-    //   type: "jpg",
-    //   converted: false,
-    //   downloaded: false,
-    //   url: null,
-    // },
-  ],
-  convertFormat: null,
-});
+import ConvertIcon from "./components/icons/Convert";
+import Header from "./components/Header";
+import TrashIcon from "./components/icons/Trash";
+import DownloadIcon from "./components/icons/Download";
+import FormatSelection from "./components/FormatSelection";
 
 function App() {
-  let inputForm;
+  let inputForm, imageInput;
 
   function onInput(event) {
     const images = event.target.files;
 
     if (!images) return;
 
-    setStore("images", (prev) => {
-      return Array.from(images)
-        .map((img) => ({
-          name: img.name,
-          converted: false,
-          downloaded: false,
-          url: URL.createObjectURL(img),
-        }))
-        .concat(prev);
-    });
+    addImages(images);
 
     inputForm.reset();
   }
@@ -61,10 +44,16 @@ function App() {
 
   function convert() {
     store.images.forEach(async (image, index) => {
+      if (image.converted) return;
+
+      setStore("images", index, "converting", true);
+
       const url = await convertImage(image, store.convertFormat);
+
       setStore("images", index, (prev) => ({
         ...prev,
         url: url,
+        converting: false,
         converted: true,
       }));
     });
@@ -72,20 +61,11 @@ function App() {
 
   return (
     <div class="w-11/12 2xl:max-w-5xl mx-auto">
-      <header class="w-full h-[10vh] flex items-center justify-between">
-        <h1 class="text-3xl font-bold">Image Convert</h1>
-
-        <label
-          for="image-input"
-          class="font-medium text-lg cursor-pointer px-4 py-2 rounded bg-indigo-500 text-white shadow"
-        >
-          Add Image
-        </label>
-      </header>
+      <Header onUploadClick={() => imageInput.click()} />
 
       <form ref={inputForm}>
         <input
-          id="image-input"
+          ref={imageInput}
           multiple={true}
           type="file"
           accept="image/*"
@@ -106,19 +86,27 @@ function App() {
                   </p>
                 </span>
 
-                <Show when={!img.converted}>
-                  <Button type="danger" onClick={() => remove(index())}>
-                    Remove
+                <Show when={!img.converted && !img.converting}>
+                  <Button
+                    type="danger"
+                    class="px-2"
+                    onClick={() => remove(index())}
+                  >
+                    <TrashIcon />
                   </Button>
                 </Show>
 
-                <Show when={img.converted}>
+                <Show when={img.converting}>
+                  <ConvertIcon class="animate-spin" />
+                </Show>
+
+                <Show when={img.converted && !img.converting}>
                   <Button
                     type="normal"
-                    class={`${img.downloaded && "bg-indigo-200"}`}
+                    class={`px-2 ${img.downloaded && "bg-indigo-200"}`}
                     onClick={() => download(index())}
                   >
-                    Download
+                    <DownloadIcon />
                   </Button>
                 </Show>
               </div>
@@ -126,10 +114,17 @@ function App() {
           </For>
         </div>
 
+        <Show when={store.images.length === 0}>
+          <div class="flex items-center justify-center mt-20">
+            <p class="font-medium">Upload images for converting</p>
+          </div>
+        </Show>
+
         <Show when={store.images.length !== 0}>
           <div class="flex gap-4 justify-center items-center mt-20">
             <p>Convert to</p>
             <FormatSelection
+              formats={store.formats}
               format={store.convertFormat}
               setFormat={(format) => {
                 setStore("convertFormat", format);
@@ -138,80 +133,20 @@ function App() {
           </div>
 
           <div class="flex justify-center mt-20">
-            <Button type="normal" onClick={convert}>
-              Convert
+            <Button
+              type="normal"
+              class="flex gap-2"
+              disabled={!store.convertFormat}
+              onClick={convert}
+            >
+              <ConvertIcon />
+              <p>Convert</p>
             </Button>
           </div>
         </Show>
       </main>
-
-      <footer class="h-[15vh]"></footer>
     </div>
   );
-}
-
-function FormatSelection(props) {
-  const [formats, setFormats] = createSignal(["png", "jpeg", "webp"]);
-  const [showTray, setShowTray] = createSignal(false);
-
-  return (
-    <div class="w-40 relative">
-      <Button
-        type="normal"
-        class="w-full uppercase"
-        onClick={() => setShowTray((v) => !v)}
-      >
-        {props.format || "Select"}
-      </Button>
-      <Show when={showTray()}>
-        <div class="absolute inset-0 h-max top-full p-2 rounded bg-white shadow flex flex-col mt-2 gap-2">
-          <For each={formats()}>
-            {(format) => (
-              <button
-                class="w-full text-center py-2 bg-gray-100 rounded"
-                onClick={() => {
-                  props.setFormat(format);
-                  setShowTray(false);
-                }}
-              >
-                {format}
-              </button>
-            )}
-          </For>
-        </div>
-      </Show>
-    </div>
-  );
-}
-
-const canvas = document.createElement("canvas");
-const ctx = canvas.getContext("2d");
-
-async function convertImage(image, convertFormat) {
-  return new Promise((resolve, reject) => {
-    try {
-      const imageFile = new Image();
-      imageFile.src = image.url;
-
-      imageFile.addEventListener("load", () => {
-        canvas.width = imageFile.width;
-        canvas.height = imageFile.height;
-        ctx.drawImage(imageFile, 0, 0);
-
-        const convertedDataUrl = canvas.toDataURL(
-          `image/${convertFormat}`,
-          0.8
-        );
-
-        const blob = dataURLToBlob(convertedDataUrl);
-        const objectURL = URL.createObjectURL(blob);
-
-        resolve(objectURL);
-      });
-    } catch (error) {
-      reject(error);
-    }
-  });
 }
 
 export default App;
