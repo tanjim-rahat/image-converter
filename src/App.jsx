@@ -61,7 +61,7 @@ function App() {
 
   function convert() {
     store.images.forEach(async (image, index) => {
-      const url = await convertImage(image);
+      const url = await convertImage(image, store.convertFormat);
       setStore("images", index, (prev) => ({
         ...prev,
         url: url,
@@ -198,7 +198,10 @@ async function convertImage(image, convertFormat) {
         canvas.height = imageFile.height;
         ctx.drawImage(imageFile, 0, 0);
 
-        const convertedDataUrl = canvas.toDataURL(`image/${convertFormat}`);
+        const convertedDataUrl = canvas.toDataURL(
+          `image/${convertFormat}`,
+          0.8
+        );
 
         const blob = dataURLToBlob(convertedDataUrl);
         const objectURL = URL.createObjectURL(blob);
