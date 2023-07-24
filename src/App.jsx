@@ -140,7 +140,7 @@ function App() {
                 <Show when={img.converted && !img.converting}>
                   <Button
                     type="normal"
-                    class={`px-2 ${img.downloaded && "bg-indigo-200"}`}
+                    class={`px-2 ${img.downloaded ? "bg-indigo-200" : ""}`}
                     onClick={() => downloadImage(index())}
                   >
                     <DownloadIcon />
