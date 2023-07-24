@@ -2,7 +2,7 @@ import { For, Show } from "solid-js";
 import JSZip from "jszip";
 
 import { store, setStore, addImages } from "./Store";
-import { convertImage } from "./functions";
+import { convertImage, formatFileSize } from "./functions";
 import Button from "./components/Button";
 import ConvertIcon from "./components/icons/Convert";
 import Header from "./components/Header";
@@ -118,9 +118,14 @@ function App() {
               <div class="w-full flex gap-6 items-center justify-between rounded border px-4 py-2">
                 <span class="w-2/3 md:w-1/3">
                   <p class="text-sm">Name</p>
-                  <p class="font-medium whitespace-nowrap overflow-hidden">
-                    {img.name}
-                  </p>
+                  <span class="flex items-center gap-2">
+                    <p class="font-medium whitespace-nowrap overflow-hidden">
+                      {img.name}
+                    </p>
+                    <p class="p-1 rounded bg-gray-100 text-sm">
+                      {formatFileSize(img.size)}
+                    </p>
+                  </span>
                 </span>
 
                 <Show when={!img.converted && !img.converting}>
