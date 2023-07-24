@@ -1,6 +1,6 @@
-import { For, Show, createEffect, createSignal } from "solid-js";
+import { For, Show, createSignal } from "solid-js";
 import { createStore } from "solid-js/store";
-
+import { dataURLToBlob } from "./functions";
 import Button from "./components/Button";
 
 const [store, setStore] = createStore({
@@ -9,14 +9,11 @@ const [store, setStore] = createStore({
     //   name: "test1",
     //   type: "jpg",
     //   converted: false,
+    //   downloaded: false,
     //   url: null,
     // },
   ],
   convertFormat: null,
-});
-
-createEffect(() => {
-  console.log(store.images);
 });
 
 function App() {
@@ -102,7 +99,7 @@ function App() {
           <For each={store.images}>
             {(img, index) => (
               <div class="w-full flex gap-6 items-center justify-between rounded border px-4 py-2">
-                <span class="w-1/3">
+                <span class="w-2/3 md:w-1/3">
                   <p class="text-sm">Name</p>
                   <p class="font-medium whitespace-nowrap overflow-hidden">
                     {img.name}
@@ -212,20 +209,6 @@ async function convertImage(image, convertFormat) {
       reject(error);
     }
   });
-}
-
-function dataURLToBlob(dataURL) {
-  const parts = dataURL.split(";base64,");
-  const contentType = parts[0].split(":")[1];
-  const raw = window.atob(parts[1]);
-  const rawLength = raw.length;
-  const uint8Array = new Uint8Array(rawLength);
-
-  for (let i = 0; i < rawLength; ++i) {
-    uint8Array[i] = raw.charCodeAt(i);
-  }
-
-  return new Blob([uint8Array], { type: contentType });
 }
 
 export default App;
