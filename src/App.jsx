@@ -1,4 +1,6 @@
 import { For, Show } from "solid-js";
+import JSZip from "jszip";
+
 import { store, setStore, addImages } from "./Store";
 import { convertImage } from "./functions";
 import Button from "./components/Button";
@@ -11,6 +13,11 @@ import FormatSelection from "./components/FormatSelection";
 function App() {
   let inputForm, imageInput;
 
+  // const images = () => {
+  //   const images = [...store.images];
+  //   return images.sort((a, b) => a.size - b.size);
+  // };
+
   function onInput(event) {
     const images = event.target.files;
 
@@ -21,30 +28,50 @@ function App() {
     inputForm.reset();
   }
 
+  function convertedName(name, format) {
+    const sname = name.split(".");
+    return `${sname.slice(0, sname.length - 1).join(".")}.${format}`;
+  }
+
   function remove(index) {
     URL.revokeObjectURL(store.images[index].url);
     setStore("images", (prev) => prev.filter((_, i) => i !== index));
   }
 
-  function download(index) {
+  function downloadImage(index) {
     const img = store.images[index];
-    const link = document.createElement("a");
-    link.href = img.url;
 
-    const sname = img.name.split(".");
-
-    link.download = `${sname.slice(0, sname.length - 1).join(".")}.${
-      store.convertFormat
-    }`;
-
-    link.click();
+    download(img.url, convertedName(img.name, store.convertFormat));
 
     setStore("images", index, "downloaded", true);
   }
 
-  function convert() {
-    store.images.forEach(async (image, index) => {
-      if (image.converted) return;
+  async function downloadZip() {
+    const zip = new JSZip();
+
+    for (let index = 0; index < store.images.length; index++) {
+      const image = store.images[index];
+      const imageFile = await fetch(image.url).then((res) => res.blob());
+      const filename = convertedName(image.name, store.convertFormat);
+
+      zip.file(filename, imageFile);
+    }
+
+    const zipFile = await zip.generateAsync({ type: "blob" });
+
+    const url = URL.createObjectURL(zipFile);
+    download(url, "image-convert.zip");
+
+    URL.revokeObjectURL(url);
+  }
+
+  async function convert() {
+    setStore("convertDisabled", true);
+
+    for (let index = 0; index < store.images.length; index++) {
+      const image = store.images[index];
+
+      if (image.converted) continue;
 
       setStore("images", index, "converting", true);
 
@@ -56,7 +83,17 @@ function App() {
         converting: false,
         converted: true,
       }));
-    });
+    }
+
+    setStore("convertDisabled", false);
+  }
+
+  function download(href, name) {
+    const link = document.createElement("a");
+    link.href = href;
+    link.download = name;
+
+    link.click();
   }
 
   return (
@@ -104,7 +141,7 @@ function App() {
                   <Button
                     type="normal"
                     class={`px-2 ${img.downloaded && "bg-indigo-200"}`}
-                    onClick={() => download(index())}
+                    onClick={() => downloadImage(index())}
                   >
                     <DownloadIcon />
                   </Button>
@@ -132,11 +169,23 @@ function App() {
             />
           </div>
 
+          <Show when={store.images.filter((img) => img.converted).length}>
+            <div class="flex justify-center mt-20">
+              <Button type="normal" onClick={downloadZip}>
+                Download zip
+              </Button>
+            </div>
+          </Show>
+
           <div class="flex justify-center mt-20">
             <Button
               type="normal"
               class="flex gap-2"
-              disabled={!store.convertFormat}
+              disabled={
+                store.convertDisabled ||
+                !store.convertFormat ||
+                store.images.filter((img) => !img.converted).length === 0
+              }
               onClick={convert}
             >
               <ConvertIcon />

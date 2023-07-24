@@ -12,6 +12,7 @@ const [store, setStore] = createStore({
   ],
   formats: ["png", "jpeg", "webp"],
   convertFormat: null,
+  convertDisabled: false,
 });
 
 function addImages(images) {
@@ -19,6 +20,7 @@ function addImages(images) {
     return Array.from(images)
       .map((img) => ({
         name: img.name,
+        size: img.size,
         conerting: false,
         converted: false,
         downloaded: false,
