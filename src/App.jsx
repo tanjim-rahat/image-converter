@@ -169,7 +169,7 @@ function App() {
 
         <Show when={store.images.length === 0}>
           <div
-            class="md:max-w-xl md:h-72 flex flex-col items-center justify-center gap-4 mt-20 border-4 border-dashed rounded mx-auto"
+            class="md:max-w-xl md:h-72 py-8 flex flex-col items-center justify-center gap-4 mt-20 border-4 border-dashed rounded mx-auto"
             onDragOver={(event) => event.preventDefault()}
             onDrop={onDrop}
           >
