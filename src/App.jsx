@@ -1,4 +1,4 @@
-import { For, Show } from "solid-js";
+import { For, Show, createSignal } from "solid-js";
 import JSZip from "jszip";
 
 import { store, setStore, addImages } from "./Store";
@@ -9,14 +9,13 @@ import Header from "./components/Header";
 import TrashIcon from "./components/icons/Trash";
 import DownloadIcon from "./components/icons/Download";
 import FormatSelection from "./components/FormatSelection";
+import UploadIcon from "./components/icons/Upload";
+import DownIcon from "./components/icons/Down";
 
 function App() {
   let inputForm, imageInput;
 
-  // const images = () => {
-  //   const images = [...store.images];
-  //   return images.sort((a, b) => a.size - b.size);
-  // };
+  const [showUploadMenu, setShowUploadMenu] = createSignal(false);
 
   function onInput(event) {
     const images = event.target.files;
@@ -26,6 +25,18 @@ function App() {
     addImages(images);
 
     inputForm.reset();
+  }
+
+  function onDrop(event) {
+    event.preventDefault();
+
+    const files = Array.from(event.dataTransfer.files).filter((file) =>
+      file.type.startsWith("image")
+    );
+
+    if (!files) return;
+
+    addImages(files);
   }
 
   function convertedName(name, format) {
@@ -116,7 +127,7 @@ function App() {
           <For each={store.images}>
             {(img, index) => (
               <div class="w-full flex gap-6 items-center justify-between rounded border px-4 py-2">
-                <span class="w-2/3 md:w-1/3">
+                <span class="w-2/3">
                   <p class="text-sm">Name</p>
                   <span class="flex items-center gap-2">
                     <p class="font-medium whitespace-nowrap overflow-hidden">
@@ -157,8 +168,42 @@ function App() {
         </div>
 
         <Show when={store.images.length === 0}>
-          <div class="flex items-center justify-center mt-20">
-            <p class="font-medium">Upload images for converting</p>
+          <div
+            class="md:max-w-xl md:h-72 flex flex-col items-center justify-center gap-4 mt-20 border-4 border-dashed rounded mx-auto"
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={onDrop}
+          >
+            <UploadIcon size={48} />
+
+            <p class="font-medium">Drag here to upload</p>
+
+            <div class="flex mt-4 relative">
+              <Button
+                type="normal"
+                class="rounded-tr-none rounded-br-none"
+                onClick={() => imageInput.click()}
+              >
+                Choose Files
+              </Button>
+              <Button
+                type="normal"
+                class="border-l rounded-tl-none rounded-bl-none"
+                onClick={() => setShowUploadMenu((v) => !v)}
+              >
+                <DownIcon class={showUploadMenu() && "rotate-180"} />
+              </Button>
+
+              <Show when={showUploadMenu()}>
+                <div class="absolute top-full inset-0 h-max p-2 bg-white shadow z-50 flex flex-col gap-2">
+                  <button
+                    class="w-full text-center hover:bg-gray-100 py-1"
+                    onClick={() => setShowUploadMenu(false)}
+                  >
+                    From device
+                  </button>
+                </div>
+              </Show>
+            </div>
           </div>
         </Show>
 
