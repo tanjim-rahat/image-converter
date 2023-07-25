@@ -1,4 +1,7 @@
+import { createEffect } from "solid-js";
 import { createStore } from "solid-js/store";
+
+const savedDarkMode = Number(localStorage.getItem("darkMode"));
 
 const [store, setStore] = createStore({
   images: [
@@ -14,6 +17,12 @@ const [store, setStore] = createStore({
   formats: ["png", "jpeg", "webp"],
   convertFormat: null,
   convertDisabled: false,
+
+  darkMode: isNaN(savedDarkMode) ? false : Boolean(savedDarkMode),
+});
+
+createEffect(() => {
+  localStorage.setItem("darkMode", Number(store.darkMode));
 });
 
 function addImages(images) {
